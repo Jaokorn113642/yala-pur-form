@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ใบขออนุมัติซ่อม / ขอซื้อ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #eef1f5; --panel: #fff; --ink: #1d2433; --muted: #667085; --line: #d7dce4;
+    --accent: #1f5fbf; --accent-ink: #fff; --danger: #c0352b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Sarabun", Tahoma, sans-serif; font-size: 15px; }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .topbar h1 { font-size: 17px; margin: 0 auto 0 0; font-weight: 700; }
+  .topbar h1 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .btn { font: inherit; font-size: 14px; border: 1px solid var(--line); background: #fff; color: var(--ink);
+    padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: #b5bdca; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.danger { color: var(--danger); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+
+  /* ---------- layout ---------- */
+  .main { display: grid; grid-template-columns: minmax(340px, 440px) 1fr; gap: 16px; padding: 16px; align-items: start; }
+  @media (max-width: 980px) { .main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px 16px; }
+  .panel h2 { font-size: 15px; margin: 18px 0 8px; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  label.f { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+  label.f input, label.f textarea, label.f select { display: block; width: 100%; margin-top: 3px; font: inherit; font-size: 15px;
+    color: var(--ink); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; background: #fff; }
+  label.f textarea { resize: vertical; min-height: 60px; }
+  input:focus, textarea:focus { outline: 2px solid #9cc0f5; border-color: var(--accent); }
+
+  .item { border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px 2px; margin-bottom: 8px; background: #fafbfd; }
+  .item-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .item-head button { border: 0; background: none; color: var(--danger); cursor: pointer; font: inherit; font-size: 13px; }
+  .item .row3 { display: grid; grid-template-columns: 1fr 70px 80px; gap: 8px; }
+
+  .urg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .urg label { display: flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; cursor: pointer; font-size: 14px; }
+  .urg label:has(input:checked) { border-color: var(--accent); background: #eaf2fe; }
+
+  .sig-block { border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px 2px; margin-bottom: 8px; }
+  .sig-block .t { font-weight: 600; font-size: 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .sig-block .t img { height: 28px; max-width: 110px; object-fit: contain; }
+  .hint { font-size: 12px; color: var(--muted); }
+
+  /* ---------- preview ---------- */
+  .pv-wrap { position: relative; overflow: hidden; }
+  .scaler { width: 793px; transform-origin: top left; }
+  .sheet { width: 793px; height: 1121px; background: #fff; color: #000; padding: 18px; box-shadow: 0 2px 14px rgba(0,0,0,.12);
+    font-family: "Sarabun", Tahoma, sans-serif; font-size: 13px; line-height: 1.25; }
+  .frame { height: 100%; border: 1.5px solid #000; display: flex; flex-direction: column; }
+  .s-head { display: grid; grid-template-columns: 140px 1fr 160px; height: 96px; border-bottom: 1.5px solid #000; }
+  .logo { display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 700; font-style: italic;
+    letter-spacing: 1px; border-right: 1px solid #000; }
+  .co { padding: 2px 8px; display: flex; flex-direction: column; justify-content: space-around; font-size: 12px; }
+  .refs { border-left: 1px solid #000; display: grid; grid-template-rows: repeat(4, 1fr); }
+  .refs div { display: grid; grid-template-columns: 62px 1fr; align-items: center; font-size: 12px; }
+  .refs div + div { border-top: 1px solid #000; }
+  .refs span:first-child { padding-left: 5px; border-right: 1px solid #000; height: 100%; display: flex; align-items: center; }
+  .refs span:last-child { padding: 0 5px; overflow: hidden; white-space: nowrap; }
+  .s-title { height: 36px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border-bottom: 1px solid #000; }
+  .ln { display: flex; align-items: flex-end; gap: 6px; padding: 0 6px; height: 30px; }
+  .ln .lb { white-space: nowrap; padding-bottom: 3px; }
+  .ln .v { flex: 1; border-bottom: 1px dotted #555; padding: 0 4px 3px; min-height: 20px; white-space: nowrap; overflow: hidden; }
+  .ln.right { justify-content: flex-end; }
+  .ln.right .v { flex: 0 0 240px; }
+  .subj { padding: 0 6px; height: 58px; display: flex; gap: 6px; }
+  .subj .lb { padding-top: 7px; white-space: nowrap; }
+  .subj .v { flex: 1; padding: 6px 4px 0; line-height: 24px; overflow: hidden; white-space: pre-wrap;
+    background-image: linear-gradient(to bottom, transparent 23px, #555 23px); background-size: 100% 24px; background-position: 0 6px;
+    background-repeat: repeat-y; -webkit-mask: none; }
+  .divider { border-top: 1px solid #000; }
+
+  .grid { flex: 1; display: grid; grid-template-columns: 7% 15% 35% 8.2% 8.3% 1fr; grid-template-rows: 32px repeat(14, 1fr);
+    border-top: 1px solid #000; border-bottom: 1px solid #000; }
+  .grid > div { border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0 5px; display: flex; align-items: center;
+    overflow: hidden; white-space: nowrap; }
+  .grid > div:nth-child(6n) { border-right: 0; }
+  .grid > div.h { background: #e8e8e8; font-weight: 700; justify-content: center; }
+  .grid > div.c { justify-content: center; }
+  .grid > div:nth-last-child(-n+6) { border-bottom: 0; }
+
+  .s-urg { height: 42px; display: flex; justify-content: space-around; align-items: center; border-bottom: 1px solid #000; }
+  .s-urg span { display: inline-flex; align-items: center; gap: 6px; }
+  .box { width: 15px; height: 15px; border: 1px solid #000; position: relative; display: inline-block; }
+  .box.on::after { content: ""; position: absolute; left: 4px; top: 0; width: 5px; height: 10px; border: solid #000;
+    border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+  .sigs { padding: 10px 6px 0; display: grid; grid-template-columns: 1fr 1fr; row-gap: 12px; column-gap: 20px; }
+  .sg { display: grid; grid-template-columns: 50px 1fr 112px; grid-template-rows: 48px 26px 28px; align-items: end; }
+  .sg .k { text-align: right; padding: 0 6px 3px 0; }
+  .sg .line { border-bottom: 1px dotted #555; height: 100%; position: relative; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px; }
+  .sg .line img { position: absolute; left: 0; right: 0; bottom: 2px; margin: auto; max-height: 44px; max-width: 100%; object-fit: contain; }
+  .sg .r { padding: 0 0 3px 6px; white-space: nowrap; }
+  .sg .paren { display: flex; justify-content: space-between; border-bottom: 1px dotted #555; padding-bottom: 3px; }
+  .s-foot { margin-top: auto; height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px;
+    border-top: 1px solid #000; font-weight: 700; font-size: 13px; }
+
+  /* ---------- signature pad ---------- */
+  dialog { border: 0; border-radius: 12px; padding: 16px; width: min(560px, 94vw); }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+  dialog canvas { width: 100%; aspect-ratio: 5 / 2; border: 1px dashed #98a2b3; border-radius: 8px; touch-action: none; background: #fff; display: block; }
+  dialog .acts { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; }
+    .topbar, .panel, dialog { display: none !important; }
+    .main { display: block; padding: 0; }
+    .pv-wrap { height: auto !important; overflow: visible; }
+    .scaler { transform: none !important; margin: 0 !important; }
+    .sheet { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>ใบขออนุมัติซ่อม / ขอซื้อ <small>FM-YALA-PUR-001</small></h1>
+  <button class="btn primary" id="btnPdf">⬇ Export PDF</button>
+  <button class="btn" onclick="window.print()">🖨 พิมพ์</button>
+  <button class="btn" id="btnSave">💾 บันทึกไฟล์</button>
+  <button class="btn" id="btnOpen">📂 เปิดไฟล์</button>
+  <button class="btn danger" id="btnNew">ล้างฟอร์ม</button>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div class="main">
+  <!-- ================= INPUT PANEL ================= -->
+  <form class="panel" id="panel" onsubmit="return false">
+    <h2>เลขที่เอกสาร</h2>
+    <div class="row">
+      <label class="f">No.<input data-k="no"></label>
+      <label class="f">K2 No.<input data-k="k2"></label>
+      <label class="f">PR No.<input data-k="pr"></label>
+      <label class="f">PO No.<input data-k="po"></label>
+    </div>
+
+    <h2>ข้อมูลผู้แจ้ง</h2>
+    <label class="f">วันที่<input type="date" data-k="date"></label>
+    <label class="f">ชื่อ-สกุล ผู้แจ้ง<input data-k="name"></label>
+    <div class="row">
+      <label class="f">ตำแหน่ง<input data-k="position"></label>
+      <label class="f">ฝ่าย/แผนก<input data-k="dept"></label>
+    </div>
+    <label class="f">เรื่อง/หัวข้อโครงการ<textarea data-k="subject" rows="2"></textarea></label>
+    <label class="f">เรียน<input data-k="to"></label>
+    <label class="f">บริษัท/หจก./ร้านค้า<input data-k="vendor"></label>
+
+    <h2>รายการ <span class="hint">(สูงสุด 14 รายการ)</span></h2>
+    <div id="items"></div>
+    <button type="button" class="btn" id="btnAdd" style="width:100%">+ เพิ่มรายการ</button>
+
+    <h2>ความเร่งด่วน</h2>
+    <div class="urg">
+      <label><input type="radio" name="urgency" data-k="urgency" value="u1">ด่วน (1-2 วัน)</label>
+      <label><input type="radio" name="urgency" data-k="urgency" value="u2">ปกติ (3-5 วัน)</label>
+      <label><input type="radio" name="urgency" data-k="urgency" value="u3">ปกติ (7-15 วัน)</label>
+      <label><input type="radio" name="urgency" data-k="urgency" value="u4">ปกติ (30-45 วัน)</label>
+    </div>
+
+    <h2>ลงชื่อ</h2>
+    <div id="sigEditors"></div>
+    <p class="hint">ข้อมูลบันทึกอัตโนมัติในเบราว์เซอร์นี้ · ใช้ "บันทึกไฟล์" เพื่อเก็บสำเนาไว้เปิดภายหลัง</p>
+  </form>
+
+  <!-- ================= A4 PREVIEW ================= -->
+  <div class="pv-wrap" id="pvWrap">
+    <div class="scaler" id="scaler">
+      <div class="sheet" id="sheet">
+        <div class="frame">
+          <div class="s-head">
+            <div class="logo">YALA</div>
+            <div class="co">
+              <div>บริษัท ยะลาฟ้าสะอาด จำกัด</div>
+              <div>YALA FAH SAARD CO., LTD.</div>
+              <div>88/8 หมู่ที่ 13 ตำบลสะเตงนอก อำเภอเมืองยะลา จังหวัดยะลา 95000</div>
+              <div>เลขประจำตัวผู้เสียภาษี: 0115559025011</div>
+            </div>
+            <div class="refs">
+              <div><span>No.</span><span data-v="no"></span></div>
+              <div><span>K2 No.</span><span data-v="k2"></span></div>
+              <div><span>PR No.</span><span data-v="pr"></span></div>
+              <div><span>PO No.</span><span data-v="po"></span></div>
+            </div>
+          </div>
+          <div class="s-title">FM-YALA-PUR-001 ใบขออนุมัติซ่อม / ใบขออนุมัติขอซื้อ</div>
+          <div class="ln right"><span class="lb">วันที่</span><span class="v" data-v="date" data-fmt="date"></span></div>
+          <div class="ln"><span class="lb">ชื่อ-สกุล ผู้แจ้ง</span><span class="v" data-v="name"></span></div>
+          <div class="ln">
+            <span class="lb">ตำแหน่ง</span><span class="v" data-v="position"></span>
+            <span class="lb">ฝ่าย/แผนก</span><span class="v" data-v="dept"></span>
+          </div>
+          <div class="subj"><span class="lb">เรื่อง/หัวข้อโครงการ</span><span class="v" data-v="subject"></span></div>
+          <div class="divider"></div>
+          <div class="ln"><span class="lb">เรียน</span><span class="v" data-v="to"></span></div>
+          <div class="ln"><span class="lb">บริษัท/หจก./ร้านค้า</span><span class="v" data-v="vendor"></span></div>
+          <div class="ln"><span class="lb">โปรดประเมินราคาค่าแรง ค่าซ่อม เครื่องมือ สินค้า และอุปกรณ์ ตามรายการต่อไปนี้</span></div>
+
+          <div class="grid" id="pvItems"></div>
+
+          <div class="s-urg">
+            <span><i class="box" data-urg="u1"></i>ด่วน (ภายใน 1-2 วัน)</span>
+            <span><i class="box" data-urg="u2"></i>ปกติ (ภายใน 3-5 วัน)</span>
+            <span><i class="box" data-urg="u3"></i>ปกติ (ภายใน 7-15 วัน)</span>
+            <span><i class="box" data-urg="u4"></i>ปกติ (ภายใน 30-45 วัน)</span>
+          </div>
+
+          <div class="sigs" id="pvSigs"></div>
+
+          <div class="s-foot">
+            <span>หมายเหตุ : กรุณาส่งใบเสนอราคาให้อนุมัติก่อนดำเนินการซ่อมหรือสั่งซื้อ</span>
+            <span style="font-weight:400">1 / 1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="padDlg">
+  <div style="font-weight:700;margin-bottom:8px" id="padTitle">ลงลายมือชื่อ</div>
+  <canvas id="pad" width="1000" height="400"></canvas>
+  <div class="acts">
+    <button class="btn" id="padClear">ล้าง</button>
+    <button class="btn" id="padCancel">ยกเลิก</button>
+    <button class="btn primary" id="padOk">ใช้ลายเซ็นนี้</button>
+  </div>
+</dialog>
+
+<script>
+const KEY = 'yala-pur-001-v1';
+const MAX_ITEMS = 14;
+const SIGS = [
+  { id: 'reporter', role: 'ผู้แจ้ง/ผู้รับผิดชอบ' },
+  { id: 'approver', role: 'ผู้อนุมัติ' },
+  { id: 'checker',  role: 'ผู้ตรวจสอบ' },
+];
+const today = () => new Date().toISOString().slice(0, 10);
+const blankItem = () => ({ code: '', name: '', qty: '', unit: '', detail: '' });
+const blank = () => ({
+  no: '', k2: '', pr: '', po: '', date: today(),
+  name: '', position: '', dept: '',
+  subject: '', to: 'ผู้จัดการฝ่ายขาย / ผู้จัดการฝ่ายบริหาร', vendor: '',
+  items: [blankItem()], urgency: '',
+  sig: {
+    reporter: { name: '', date: '', img: '' },
+    approver: { name: '', date: '', img: '' },
+    checker:  { name: '', date: '', img: '' },
+  },
+});
+
+let state;
+try { state = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch { state = blank(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+const get = p => p.split('.').reduce((o, k) => (o == null ? undefined : o[k]), state);
+const set = (p, v) => { const ks = p.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], state)[last] = v; };
+const fmtDate = v => v ? new Date(v + 'T00:00').toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- editors ---------- */
+function buildSigEditors() {
+  document.getElementById('sigEditors').innerHTML = SIGS.map(s => `
+    <div class="sig-block">
+      <div class="t"><span>${s.role}</span>
+        <span style="display:flex;gap:6px;align-items:center">
+          <img data-sigthumb="${s.id}" alt="">
+          <button type="button" class="btn" data-pad="${s.id}">✍ เซ็นชื่อ</button>
+        </span>
+      </div>
+      <div class="row">
+        <label class="f">ชื่อ (ตัวบรรจง)<input data-k="sig.${s.id}.name"></label>
+        <label class="f">วันที่<input type="date" data-k="sig.${s.id}.date"></label>
+      </div>
+    </div>`).join('');
+}
+
+function buildItems() {
+  const box = document.getElementById('items');
+  box.innerHTML = state.items.map((it, i) => `
+    <div class="item">
+      <div class="item-head"><span>รายการที่ ${i + 1}</span>
+        ${state.items.length > 1 ? `<button type="button" data-del="${i}">ลบ</button>` : ''}</div>
+      <label class="f">รายการ<input data-k="items.${i}.name"></label>
+      <div class="row3">
+        <label class="f">รหัสทรัพย์สิน<input data-k="items.${i}.code"></label>
+        <label class="f">จำนวน<input data-k="items.${i}.qty" inputmode="decimal"></label>
+        <label class="f">หน่วย<input data-k="items.${i}.unit" list="units"></label>
+      </div>
+      <label class="f">รายละเอียด<input data-k="items.${i}.detail"></label>
+    </div>`).join('') +
+    `<datalist id="units">${['ชิ้น','อัน','ชุด','ตัว','เครื่อง','กล่อง','ม้วน','เมตร','ลิตร','งาน','ครั้ง'].map(u => `<option value="${u}">`).join('')}</datalist>`;
+  document.getElementById('btnAdd').disabled = state.items.length >= MAX_ITEMS;
+  bind(box);
+}
+
+function bind(root) {
+  root.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.dataset.k;
+    if (el.type === 'radio') el.checked = get(k) === el.value;
+    else el.value = get(k) ?? '';
+    if (el._bound) return;
+    el._bound = true;
+    el.addEventListener(el.type === 'radio' ? 'change' : 'input', () => { set(k, el.value); save(); render(); });
+  });
+}
+
+/* ---------- preview ---------- */
+function render() {
+  document.querySelectorAll('[data-v]').forEach(el => {
+    const v = get(el.dataset.v) ?? '';
+    el.textContent = el.dataset.fmt === 'date' ? fmtDate(v) : v;
+  });
+  document.querySelectorAll('[data-urg]').forEach(el => el.classList.toggle('on', state.urgency === el.dataset.urg));
+
+  let g = ['ลำดับที่', 'รหัสทรัพย์สิน', 'รายการ', 'จำนวน', 'หน่วย', 'รายละเอียด'].map(h => `<div class="h">${h}</div>`).join('');
+  for (let i = 0; i < MAX_ITEMS; i++) {
+    const it = state.items[i];
+    const used = it && Object.values(it).some(v => String(v).trim());
+    g += `<div class="c">${used || (i === 0 && it) ? i + 1 : ''}</div>` +
+         `<div>${esc(it?.code)}</div><div>${esc(it?.name)}</div>` +
+         `<div class="c">${esc(it?.qty)}</div><div class="c">${esc(it?.unit)}</div><div>${esc(it?.detail)}</div>`;
+  }
+  document.getElementById('pvItems').innerHTML = g;
+
+  const sg = s => {
+    const d = state.sig[s.id];
+    return `<div class="sg">
+      <span class="k">ลงชื่อ</span><span class="line">${d.img ? `<img src="${d.img}" alt="">` : ''}</span><span class="r">${s.role}</span>
+      <span class="k">(</span><span class="paren"><span></span><span>${esc(d.name)}</span><span></span></span><span class="r">)</span>
+      <span class="k">วันที่</span><span class="line">${fmtDate(d.date)}</span><span></span>
+    </div>`;
+  };
+  document.getElementById('pvSigs').innerHTML = sg(SIGS[0]) + sg(SIGS[1]) + sg(SIGS[2]);
+  document.querySelectorAll('[data-sigthumb]').forEach(img => {
+    const src = state.sig[img.dataset.sigthumb].img;
+    img.src = src || ''; img.style.display = src ? '' : 'none';
+  });
+}
+
+/* ---------- preview scaling ---------- */
+const wrap = document.getElementById('pvWrap'), scaler = document.getElementById('scaler');
+function fit() {
+  const w = wrap.clientWidth, s = Math.min(1, w / 793);
+  scaler.style.transform = `scale(${s})`;
+  scaler.style.marginLeft = Math.max(0, (w - 793 * s) / 2) + 'px';
+  wrap.style.height = 1121 * s + 'px';
+}
+new ResizeObserver(fit).observe(wrap);
+
+/* ---------- events ---------- */
+document.getElementById('panel').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del) { state.items.splice(+del.dataset.del, 1); save(); buildItems(); render(); }
+  const pad = e.target.closest('[data-pad]');
+  if (pad) openPad(pad.dataset.pad);
+});
+document.getElementById('btnAdd').onclick = () => {
+  if (state.items.length >= MAX_ITEMS) return;
+  state.items.push(blankItem()); save(); buildItems(); render();
+  const inputs = document.querySelectorAll('#items .item:last-child input'); inputs[0]?.focus();
+};
+document.getElementById('btnNew').onclick = () => {
+  if (!confirm('ล้างข้อมูลทั้งหมดและเริ่มฟอร์มใหม่?')) return;
+  state = blank(); save(); init();
+};
+document.getElementById('btnSave').onclick = () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: fileBase() + '.json' });
+  a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById('btnOpen').onclick = () => document.getElementById('fileIn').click();
+document.getElementById('fileIn').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { state = Object.assign(blank(), JSON.parse(await f.text())); save(); init(); }
+  catch { alert('ไฟล์ไม่ถูกต้อง'); }
+  e.target.value = '';
+};
+
+function fileBase() {
+  const id = state.no || state.pr || (state.date || today()).replaceAll('-', '');
+  return `FM-YALA-PUR-001_${id}`.replace(/[\\/:*?"<>|]/g, '-');
+}
+
+document.getElementById('btnPdf').onclick = async e => {
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = 'กำลังสร้าง PDF...';
+  try {
+    await document.fonts.ready;
+    const canvas = await html2canvas(document.getElementById('sheet'), {
+      scale: 2.5, backgroundColor: '#ffffff', useCORS: true,
+      onclone: d => { const s = d.getElementById('scaler'); s.style.transform = 'none'; s.style.marginLeft = '0'; },
+    });
+    const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+    pdf.save(fileBase() + '.pdf');
+  } catch (err) {
+    alert('สร้าง PDF ไม่สำเร็จ: ' + err.message + '\nลองใช้ปุ่ม "พิมพ์" แล้วเลือก Save as PDF แทน');
+  } finally { btn.disabled = false; btn.textContent = '⬇ Export PDF'; }
+};
+
+/* ---------- signature pad ---------- */
+const dlg = document.getElementById('padDlg'), cv = document.getElementById('pad'), ctx = cv.getContext('2d');
+let padFor = null, drawing = false, dirty = false;
+function openPad(id) {
+  padFor = id; dirty = false;
+  document.getElementById('padTitle').textContent = 'ลงลายมือชื่อ – ' + SIGS.find(s => s.id === id).role;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.lineWidth = 5; ctx.lineCap = ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b2a7a';
+  dlg.showModal();
+}
+const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+cv.onpointerdown = e => { drawing = true; cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...pt(e)); };
+cv.onpointermove = e => { if (!drawing) return; ctx.lineTo(...pt(e)); ctx.stroke(); dirty = true; };
+cv.onpointerup = cv.onpointercancel = () => { drawing = false; };
+document.getElementById('padClear').onclick = () => { ctx.clearRect(0, 0, cv.width, cv.height); dirty = false; };
+document.getElementById('padCancel').onclick = () => dlg.close();
+document.getElementById('padOk').onclick = () => {
+  state.sig[padFor].img = dirty ? cv.toDataURL('image/png') : '';
+  save(); render(); dlg.close();
+};
+
+function init() { buildSigEditors(); buildItems(); bind(document.getElementById('panel')); render(); fit(); }
+init();
+</script>
+</body>
+</html>
